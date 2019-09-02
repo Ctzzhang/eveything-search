@@ -1,4 +1,4 @@
-package com.everything.movie.web;
+package com.everything.web;
 
 
 import com.everything.movie.entity.Movie;

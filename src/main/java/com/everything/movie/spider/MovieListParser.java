@@ -21,7 +21,15 @@ import java.util.Set;
 @Slf4j
 public class MovieListParser {
 
-    public static final String START_PAGE = "https://www.dy2018.com/html/gndy/dyzz/index.html";
+    public static final String START_PAGE = "https://www.dy2018.com/html/gndy/";
+    public static final String HTML = ".html";
+
+    public static final String JINGDIAN_PAGE ="jddyy/index";
+    private static final String ZUIXIN_PAGE ="dyzz/index";
+    private static final String ZONGHE_PAGE ="jddy/index;";
+
+
+    private static final int PAGE_MAX_NUM = 100;
 
     public static String[] userAgentList = {
             "Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.8) Gecko Fedora/1.9.0.8-1.fc10 Kazehakase/0.5.6",
@@ -66,7 +74,47 @@ public class MovieListParser {
         conn.header("Accept-Encoding", "gzip, deflate, sdch");
         conn.header("Accept-Language", "zh-CN,zh;q=0.8");
 
-        Document document =  conn.get();
+        Document document = null;
+        try {
+            document =  conn.get();
+        } catch (IOException e) {
+            log.error("获取{}页面异常:{}", url, e);
+            String[] htmlStr = url.split("_");
+            String[] m = htmlStr[htmlStr.length - 1].split("//.");
+            if (url.equals(START_PAGE+ JINGDIAN_PAGE + HTML)) {
+                url = START_PAGE+ JINGDIAN_PAGE + "_2" + HTML;
+            } else if (htmlStr[0].equals(START_PAGE + JINGDIAN_PAGE )) {
+
+                int pageNum = Integer.parseInt(m[0]);
+                if (pageNum > PAGE_MAX_NUM) {
+                    url = START_PAGE+ZUIXIN_PAGE + HTML;
+                } else {
+                    url = START_PAGE+JINGDIAN_PAGE + "_" + (pageNum + 1) + HTML;
+                }
+            } else  if (url.equals(START_PAGE+ZUIXIN_PAGE + HTML)) {
+                url = START_PAGE+ZUIXIN_PAGE + "_2" + HTML;
+            } else if (htmlStr[0].equals(START_PAGE+ZUIXIN_PAGE )) {
+                int pageNum = Integer.parseInt(m[0]);
+                if (pageNum > PAGE_MAX_NUM) {
+                    url = START_PAGE+ZONGHE_PAGE + HTML;
+                } else {
+                    url = START_PAGE+ ZUIXIN_PAGE + "_" + (pageNum + 1) + HTML;
+                }
+            } else  if (url.equals(START_PAGE+ZONGHE_PAGE + HTML)) {
+                url = START_PAGE+ZONGHE_PAGE + "_2" + HTML;
+            } else if (htmlStr[0].equals(START_PAGE+ZONGHE_PAGE )) {
+                int pageNum = Integer.parseInt(m[0]);
+                if (pageNum > PAGE_MAX_NUM) {
+                   return;
+                } else {
+                    url = START_PAGE+ ZONGHE_PAGE + "_" + (pageNum + 1) + HTML;
+                }
+            }
+            parse(url);
+
+        }
+
+
         document.select(".co_content8 a").forEach(a -> {
             String href = a.attr("href");
             if (href.matches("/i/[0-9]+.html")) {

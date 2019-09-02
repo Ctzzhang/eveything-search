@@ -77,38 +77,29 @@
             <artifactId>logback-core</artifactId>
             <version>1.2.3</version>
         </dependency>
+
     </dependencies>
 
     <build>
         <plugins>
+
+
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-            <!--docker构建-->
-            <!--
-            <plugin>
-                <groupId>com.google.cloud.tools</groupId>
-                <artifactId>jib-maven-plugin</artifactId>
-                <version>1.0.1</version>
                 <configuration>
-                    <from>
-                        <image>registry.cn-hangzhou.aliyuncs.com/cbwleft/openjdk:alpine</image>
-                    </from>
-                    <to>
-                        <image>registry.cn-hangzhou.aliyuncs.com/cbwleft/movie-elasticsearch</image>
-                    </to>
+                    <!--fork :  如果没有该项配置，肯定devtools不会起作用，即应用不会restart -->
+                    <fork>true</fork>
                 </configuration>
                 <executions>
                     <execution>
-                        <phase>package</phase>
                         <goals>
-                            <goal>build</goal>
+                            <goal>repackage</goal>
                         </goals>
                     </execution>
                 </executions>
             </plugin>
-            -->
+
         </plugins>
         <finalName>everything-search</finalName>
     </build>

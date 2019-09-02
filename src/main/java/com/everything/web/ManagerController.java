@@ -1,4 +1,4 @@
-package com.everything.movie.web;
+package com.everything.web;
 
 import com.everything.movie.spider.MovieListParser;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +22,8 @@ public class ManagerController {
     private MovieListParser movieListParser;
 
     @GetMapping("/spider/movie")
-    public String crawl (@RequestParam(value = "p",required = false, defaultValue = MovieListParser.START_PAGE) String page) {
+    public String crawl (@RequestParam(value = "p",required = false,
+            defaultValue = MovieListParser.START_PAGE+MovieListParser.JINGDIAN_PAGE + MovieListParser.HTML) String page) {
         try {
             if (lock.tryLock()) {
                 movieListParser.parse(page);
