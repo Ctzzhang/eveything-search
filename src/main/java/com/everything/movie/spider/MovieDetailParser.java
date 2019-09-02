@@ -33,7 +33,7 @@ public class MovieDetailParser {
     public Movie parse(String id) throws IOException {
         String userAgent = userAgentList[new Random().nextInt(userAgentList.length)];
         String url = MessageFormat.format(URL_PATTERN, id);
-        Document document = Jsoup.connect(url).userAgent(userAgent).timeout(10000).get();
+        Document document = Jsoup.connect(url).userAgent(userAgent).timeout(100000).get();
         Movie movie = new Movie();
         movie.setId(id);
         String title = document.select(".title_all h1").text();
