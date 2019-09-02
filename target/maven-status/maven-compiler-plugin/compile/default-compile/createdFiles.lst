@@ -1,0 +1,13 @@
+com\everything\movie\crawler\MovieDetailParser.class
+com\everything\movie\ElasticsearchApplication.class
+com\everything\movie\repository\IMovieRepository.class
+com\everything\movie\entity\Page$PageBuilder.class
+com\everything\movie\crawler\MovieListParser.class
+com\everything\movie\web\ManagerController.class
+com\everything\movie\repository\impl\MovieESRepository.class
+com\everything\movie\entity\QueryDTO.class
+com\everything\movie\entity\Page.class
+com\everything\movie\config\HttpSettingsCustomizer.class
+com\everything\movie\entity\Movie.class
+com\everything\movie\web\SearchController.class
+com\everything\movie\entity\QueryDTO$QueryDTOBuilder.class
