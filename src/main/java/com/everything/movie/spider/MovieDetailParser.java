@@ -1,11 +1,13 @@
 package com.everything.movie.spider;
 
+import com.everything.Redis.RedisUtil;
 import com.everything.movie.entity.Movie;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -28,9 +30,17 @@ import static java.util.stream.Collectors.toList;
 @Slf4j
 public class MovieDetailParser {
 
+
+    @Autowired
+    public RedisUtil redis;
     public static final String URL_PATTERN = "https://www.dy2018.com/i/{0}.html";
 
     public Movie parse(String id) throws IOException {
+        if (redis.sHasKey(MovieListParser.START_PAGE, id)) {
+            log.info("redis has id {}", id);
+            return null;
+        }
+
         String userAgent = userAgentList[new Random().nextInt(userAgentList.length)];
         String url = MessageFormat.format(URL_PATTERN, id);
         Document document = Jsoup.connect(url).userAgent(userAgent).timeout(100000).get();

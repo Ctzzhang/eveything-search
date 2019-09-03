@@ -1,6 +1,7 @@
 package com.everything.movie.spider;
 
 
+import com.everything.Redis.RedisUtil;
 import com.everything.movie.entity.Movie;
 import com.everything.movie.repository.IMovieRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,10 @@ import java.util.Set;
 @Component
 @Slf4j
 public class MovieListParser {
+
+
+    @Autowired
+    public RedisUtil redis;
 
     public static final String START_PAGE = "https://www.dy2018.com/html/gndy/";
     public static final String HTML = ".html";
@@ -80,7 +85,7 @@ public class MovieListParser {
         } catch (IOException e) {
             log.error("获取{}页面异常:{}", url, e);
             String[] htmlStr = url.split("_");
-            String[] m = htmlStr[htmlStr.length - 1].split("//.");
+            String[] m = htmlStr[htmlStr.length - 1].split(".");
             if (url.equals(START_PAGE+ JINGDIAN_PAGE + HTML)) {
                 url = START_PAGE+ JINGDIAN_PAGE + "_2" + HTML;
             } else if (htmlStr[0].equals(START_PAGE + JINGDIAN_PAGE )) {
@@ -126,8 +131,12 @@ public class MovieListParser {
                     try {
                         Thread.sleep(1000);
                         Movie movie = movieDetailParser.parse(id);
-                        movieRepository.save(movie);
-                        ids.add(id);
+                        if (null != movie) {
+                            movieRepository.save(movie);
+                            ids.add(id);
+                            redis.sSet(START_PAGE, id);
+                        }
+
                     } catch (IOException e) {
                         log.error("抓取电影id:{}异常", id, e);
                     } catch (InterruptedException e) {

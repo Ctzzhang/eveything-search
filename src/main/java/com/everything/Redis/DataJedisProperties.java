@@ -4,9 +4,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
+import redis.clients.jedis.JedisPoolConfig;
 
 @Configuration
-@PropertySource("classpath:config/application-redis.properties")
+@PropertySource("classpath:application-redis.properties")
 public class DataJedisProperties {
     @Value("${redis.maxIdle}")
     private Integer maxIdle;
@@ -33,11 +39,11 @@ public class DataJedisProperties {
     private boolean testWhileIdle;
 
 
-    @Value("${spring.redis.cluster.nodes}")
+    /*@Value("${spring.redis.cluster.nodes}")
     private String clusterNodes;
 
     @Value("${spring.redis.cluster.max-redirects}")
-    private Integer mmaxRedirectsac;
+    private Integer mmaxRedirectsac;*/
 
     /**
      * JedisPoolConfig 连接池
@@ -80,7 +86,7 @@ public class DataJedisProperties {
         //连接池
         JedisConnectionFactory.setPoolConfig(jedisPoolConfig);
         //IP地址
-        JedisConnectionFactory.setHostName("192.168.177.128");
+        JedisConnectionFactory.setHostName("127.0.0.1");
         //端口号
         JedisConnectionFactory.setPort(6379);
         //如果Redis设置有密码
