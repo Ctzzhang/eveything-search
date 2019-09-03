@@ -1,7 +1,7 @@
 package com.everything.move.spider;
 
 import com.everything.movie.entity.Movie;
-import com.everything.movie.spider.MovieDetailParser;
+import com.everything.movie.spider.dytiantang.MovieDetailParser;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.Test;

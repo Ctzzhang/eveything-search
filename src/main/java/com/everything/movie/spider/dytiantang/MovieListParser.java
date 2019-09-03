@@ -1,4 +1,4 @@
-package com.everything.movie.spider;
+package com.everything.movie.spider.dytiantang;
 
 
 import com.everything.Redis.RedisUtil;
@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -34,7 +35,7 @@ public class MovieListParser {
     private static final String ZONGHE_PAGE ="jddy/index;";
 
 
-    private static final int PAGE_MAX_NUM = 100;
+    private static final int PAGE_MAX_NUM = 10;
 
     public static String[] userAgentList = {
             "Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.8) Gecko Fedora/1.9.0.8-1.fc10 Kazehakase/0.5.6",
@@ -69,6 +70,18 @@ public class MovieListParser {
     private Set<String> ids = new HashSet<>();
 
     public void parse(String url) throws IOException {
+        if (redis.sHasKey(MovieListParser.START_PAGE+HTML, url)) {
+            log.info("redis has url {}", url);
+            while (redis.sHasKey(MovieListParser.START_PAGE+HTML, url)) {
+                url = getNextUrl(url);
+                if (null == url) {
+                    log.info("所有页面抓全完成");
+                    return;
+                }
+            }
+            parse(url);
+        }
+
         String userAgent = userAgentList[new Random().nextInt(userAgentList.length)];
         log.info("抓取列表页面:{}", url);
 
@@ -84,43 +97,27 @@ public class MovieListParser {
             document =  conn.get();
         } catch (IOException e) {
             log.error("获取{}页面异常:{}", url, e);
-            String[] htmlStr = url.split("_");
-            String[] m = htmlStr[htmlStr.length - 1].split(".");
-            if (url.equals(START_PAGE+ JINGDIAN_PAGE + HTML)) {
-                url = START_PAGE+ JINGDIAN_PAGE + "_2" + HTML;
-            } else if (htmlStr[0].equals(START_PAGE + JINGDIAN_PAGE )) {
-
-                int pageNum = Integer.parseInt(m[0]);
-                if (pageNum > PAGE_MAX_NUM) {
-                    url = START_PAGE+ZUIXIN_PAGE + HTML;
-                } else {
-                    url = START_PAGE+JINGDIAN_PAGE + "_" + (pageNum + 1) + HTML;
-                }
-            } else  if (url.equals(START_PAGE+ZUIXIN_PAGE + HTML)) {
-                url = START_PAGE+ZUIXIN_PAGE + "_2" + HTML;
-            } else if (htmlStr[0].equals(START_PAGE+ZUIXIN_PAGE )) {
-                int pageNum = Integer.parseInt(m[0]);
-                if (pageNum > PAGE_MAX_NUM) {
-                    url = START_PAGE+ZONGHE_PAGE + HTML;
-                } else {
-                    url = START_PAGE+ ZUIXIN_PAGE + "_" + (pageNum + 1) + HTML;
-                }
-            } else  if (url.equals(START_PAGE+ZONGHE_PAGE + HTML)) {
-                url = START_PAGE+ZONGHE_PAGE + "_2" + HTML;
-            } else if (htmlStr[0].equals(START_PAGE+ZONGHE_PAGE )) {
-                int pageNum = Integer.parseInt(m[0]);
-                if (pageNum > PAGE_MAX_NUM) {
-                   return;
-                } else {
-                    url = START_PAGE+ ZONGHE_PAGE + "_" + (pageNum + 1) + HTML;
+            url = getNextUrl(url);
+            if (null == url) {
+                log.info("所有页面抓全完成");
+                return;
+            }
+            while (redis.sHasKey(MovieListParser.START_PAGE + HTML, url)) {
+                url = getNextUrl(url);
+                if (null == url) {
+                    log.info("所有页面抓全完成");
+                    return;
                 }
             }
             parse(url);
 
         }
 
+        boolean allMovieId = true;
 
-        document.select(".co_content8 a").forEach(a -> {
+
+
+        for (Element a : document.select(".co_content8 a")) {
             String href = a.attr("href");
             if (href.matches("/i/[0-9]+.html")) {
                 String id = href.substring(3, href.lastIndexOf("."));
@@ -138,22 +135,68 @@ public class MovieListParser {
                         }
 
                     } catch (IOException e) {
+                        allMovieId = false;
+
                         log.error("抓取电影id:{}异常", id, e);
                     } catch (InterruptedException e) {
+                        allMovieId = false;
                     }
                 }
             }
-        });
+        }
+        if (allMovieId) {
+            redis.sSet(START_PAGE+HTML, url);
+        }
+
+
+
         document.select("div.x a").forEach(a -> {
             String text = a.text();
-            String url1 = a.absUrl("href");
+
             if (text.equals("下一页") ) {
                 try {
                     parse(a.absUrl("href"));//recursion
+
+
                 } catch (IOException e) {
                     log.error("抓取下一页异常:{}", e);
                 }
             }
         });
+    }
+
+    public String getNextUrl(String url) {
+        String[] htmlStr = url.split("_");
+        String[] m = htmlStr[htmlStr.length - 1].split("\\.");
+        if (url.equals(START_PAGE+ JINGDIAN_PAGE + HTML)) {
+            url = START_PAGE+ JINGDIAN_PAGE + "_2" + HTML;
+        } else if (htmlStr[0].equals(START_PAGE + JINGDIAN_PAGE )) {
+
+            int pageNum = Integer.parseInt(m[0]);
+            if (pageNum > PAGE_MAX_NUM) {
+                url = START_PAGE+ZUIXIN_PAGE + HTML;
+            } else {
+                url = START_PAGE+JINGDIAN_PAGE + "_" + (pageNum + 1) + HTML;
+            }
+        } else  if (url.equals(START_PAGE+ZUIXIN_PAGE + HTML)) {
+            url = START_PAGE+ZUIXIN_PAGE + "_2" + HTML;
+        } else if (htmlStr[0].equals(START_PAGE+ZUIXIN_PAGE )) {
+            int pageNum = Integer.parseInt(m[0]);
+            if (pageNum > PAGE_MAX_NUM) {
+                url = START_PAGE+ZONGHE_PAGE + HTML;
+            } else {
+                url = START_PAGE+ ZUIXIN_PAGE + "_" + (pageNum + 1) + HTML;
+            }
+        } else  if (url.equals(START_PAGE+ZONGHE_PAGE + HTML)) {
+            url = START_PAGE+ZONGHE_PAGE + "_2" + HTML;
+        } else if (htmlStr[0].equals(START_PAGE+ZONGHE_PAGE )) {
+            int pageNum = Integer.parseInt(m[0]);
+            if (pageNum > PAGE_MAX_NUM) {
+                return null;
+            } else {
+                url = START_PAGE+ ZONGHE_PAGE + "_" + (pageNum + 1) + HTML;
+            }
+        }
+         return url;
     }
 }

@@ -1,6 +1,6 @@
 package com.everything.move.spider;
 
-import com.everything.movie.spider.MovieListParser;
+import com.everything.movie.spider.dytiantang.MovieListParser;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;

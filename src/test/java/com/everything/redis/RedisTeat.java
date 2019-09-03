@@ -1,8 +1,6 @@
 package com.everything.redis;
 
 import com.everything.Redis.RedisUtil;
-import com.everything.movie.entity.Movie;
-import com.everything.movie.spider.MovieDetailParser;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.Test;

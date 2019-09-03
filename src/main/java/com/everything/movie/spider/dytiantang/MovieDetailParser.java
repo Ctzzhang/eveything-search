@@ -1,4 +1,4 @@
-package com.everything.movie.spider;
+package com.everything.movie.spider.dytiantang;
 
 import com.everything.Redis.RedisUtil;
 import com.everything.movie.entity.Movie;
@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Random;
 
 
-import static com.everything.movie.spider.MovieListParser.userAgentList;
+import static com.everything.movie.spider.dytiantang.MovieListParser.userAgentList;
 import static java.util.stream.Collectors.toList;
 
 @Component

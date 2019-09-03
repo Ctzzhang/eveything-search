@@ -1,7 +1,7 @@
 package com.everything.move.jest;
 
 import com.everything.movie.entity.Movie;
-import com.everything.movie.spider.MovieDetailParser;
+import com.everything.movie.spider.dytiantang.MovieDetailParser;
 import io.searchbox.client.JestClient;
 import io.searchbox.client.JestResult;
 import io.searchbox.core.Index;
