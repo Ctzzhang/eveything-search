@@ -62,8 +62,8 @@ public class Mp4ListParser {
 
 
         for (Element a : document.select(".weixin")) {
-            String href = a.attr("href");
-            if (href.matches("/i/[0-9]+.html")) {
+            String href = a.getElementsByTag("a").attr("href");
+            if (href.matches("/hddy/hdmp[0-9]+-0-0.html")) {
                 String id = href.substring(3, href.lastIndexOf("."));
                 if (ids.contains(id)) {
                     log.info("已经抓取过该电影，不再重复抓取");

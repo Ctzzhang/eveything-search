@@ -5,6 +5,7 @@ import com.everything.movie.entity.Movie;
 import com.everything.movie.entity.Page;
 import com.everything.movie.entity.QueryDTO;
 import com.everything.movie.repository.IMovieRepository;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.searchbox.client.JestClient;
 import io.searchbox.client.JestResult;
@@ -120,8 +121,8 @@ public class MovieESRepository implements IMovieRepository {
 
             int took = result.getJsonObject().get("took").getAsInt();
 
-            Long a = result.getTotal();
-            result.getTotal();
+            Long a = getTotal(result);
+            //result.getTotal();
 
             Page<Movie> page = Page.<Movie>builder().list(movies).pageNo(pageNo).size(size).total(a).took(took).build();
             return page;
@@ -132,7 +133,17 @@ public class MovieESRepository implements IMovieRepository {
 
     }
 
+    public Long getTotal(SearchResult result) {
+        Long total = null;
+        JsonElement obj  =  result.getJsonObject();
 
+        JsonElement obj2 =  ((JsonObject) obj).get("hits");
+        JsonElement retval = ((JsonObject)obj2).get("total");
+        retval=  ((JsonObject) retval).get("value");
+
+        if (obj != retval) total = retval.getAsLong();
+        return total;
+    }
 
     @Override
     public Movie get(String id) {
