@@ -2,7 +2,6 @@ package com.everything.movie.spider.mp4Ba;
 
 import com.everything.Redis.RedisUtil;
 import com.everything.movie.entity.Movie;
-import com.everything.movie.spider.dytiantang.MovieListParser;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -22,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.everything.movie.spider.dytiantang.MovieListParser.userAgentList;
 import static java.util.stream.Collectors.toList;
@@ -34,7 +35,7 @@ public class Mp4DetailParser {
     @Autowired
     public RedisUtil redis;
     public static final String URL_PATTERN = "https://www.mp4pa.com/hddy/{0}.html";
-
+    private static String REGEX_CHINESE = "[\u4e00-\u9fa5]";// 中文正则
 
     public static Movie parse(String id) throws IOException {
         /*if (redis.sHasKey(MovieListParser.START_PAGE, id)) {
@@ -47,17 +48,26 @@ public class Mp4DetailParser {
         Document document = Jsoup.connect(url).userAgent(userAgent).timeout(100000).get();
         Movie movie = new Movie();
         movie.setId(id);
-        String title = document.select(".col-md-17 text-center sea-col h4").text();
+
+        Elements ab = document.getElementsByClass("col-md-17  sea-col");
+        Element ab0 = ab.get(0);
+        Element ab1 = ab.get(1);
+        Elements ab1list = ab1.getAllElements();
+
+        String title = ab1list.get(2).text();
         log.debug("标题:{}", title);
         movie.setTitle(title);
-        String score = document.select("strong.rank").text();
+
+
+        String score = "0";
         log.debug("评分:{}", score);
         try {
             movie.setScore(Float.parseFloat(score));
         } catch (NumberFormatException e) {
             log.info(e.getMessage());
         }
-        String updateDate = document.select("span.updatetime").text();
+        /*log.debug("发布日期:{}", ab1list.get(9).text().split(":")[1].split("\\(")[0].replace(" ", ""));
+        String updateDate = ab1list.get(9).text().split(":")[1].split("\\(")[0].replace(" ", "");;;
         log.debug("发布日期:{}", updateDate);
         try {
             DateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -67,10 +77,10 @@ public class Mp4DetailParser {
             movie.setUpdateDay(LocalDate.parse(updateDate, dtf));
         } catch (ParseException e) {
             log.info("发布日期{}解析出错", updateDate);
-        }
+        }*/
         Elements zoom = document.select("#Zoom");
         try {
-            String coverUrl = zoom.select("p, div").get(0).select("img").attr("src");
+            String coverUrl = ab.get(0).select("img").attr("src");
             log.debug("封面图片:{}", coverUrl);
             movie.setCoverUrl(coverUrl);
         } catch (Exception e) {
@@ -78,47 +88,76 @@ public class Mp4DetailParser {
         }
         List<String> actor = new ArrayList<>();
         movie.setActor(actor);
-        zoom.select("p, div").forEach(p -> {
-            String text = p.text();
-            try {
-                if (text.startsWith("◎译　　名")) {
-                    log.debug("译名:{}", text);
-                    movie.setTranslatedName(Arrays.asList(text.substring(6).split("/")));
-                } else if (text.startsWith("◎片　　名")) {
-                    log.debug("片名:{}", text);
-                    movie.setName(text.substring(6));
-                } else if (text.startsWith("◎年　　代")) {
-                    log.debug("年代:{}", text);
-                    movie.setYear(Integer.parseInt(text.substring(6)));
-                } else if (text.startsWith("◎产　　地")) {
-                    log.debug("产地:{}", text);
-                    movie.setOrigin(text.substring(6));
-                } else if (text.startsWith("◎类　　别")) {
-                    log.debug("类别:{}", text);
-                    movie.setCategory(Arrays.asList(text.substring(6).split("/")));
-                } else if (text.startsWith("◎片　　长")) {
-                    log.debug("片长:{}", text);
-                    movie.setDuration(Integer.parseInt(text.substring(6)
-                            .replace("分钟", "").replace("Mins", "").trim()));
-                } else if (text.startsWith("◎导　　演")) {
-                    log.debug("导演:{}", text);
-                    movie.setDirector(text.substring(6));
-                } else if (text.startsWith("◎上映日期")) {
-                    log.debug("上映日期:{}", text);
-                    movie.setReleaseDate(text.substring(6));
-                } else if (text.startsWith("◎主　　演") || text.startsWith("　　　　　")) {
-                    log.debug("主演:{}", text);
-                    actor.add(text.substring(6));
-                } else if (text.startsWith("◎简　　介")) {
-                    String description = p.nextElementSibling().text();
-                    log.debug("简介:{}", description);
-                    movie.setDescription(description.substring(2));
-                }
-            } catch (RuntimeException e) {
-                log.info(e.getMessage());
+        for (int i = 0; i< ab1.getAllElements().size(); i++) {
+            if (i == 0) {
+                continue;
             }
-        });
-        List<String> downloadUrl = zoom.select("table a").stream().map(Element::text).collect(toList());
+            String text = ab1.getAllElements().get(i).text();
+            text.replace("：",":");
+            text.replace(" ", "");
+            if (text.startsWith("又名")) {
+                log.debug("又名:{}", text);
+                movie.setTranslatedName(Arrays.asList(text.split(":")[1].split("/")));
+            } else if (text.contains("导演")) {
+                log.debug("导演:{}", text);
+
+                if (text.split(":").length >= 2) {
+                    movie.setDirector(text.split(":")[1]);
+                } else {
+                    movie.setDirector(text.split("：")[1]);
+                }
+
+            } else if (text.startsWith("编剧")) {
+                log.debug("编剧:{}", text);
+                movie.setTranslatedName(Arrays.asList(text.split(":")[1].split("/")));
+            } else if (text.startsWith("主演")) {
+                log.debug("主演:{}", text);
+                if (text.split(":").length >= 2) {
+                    actor.addAll(Arrays.asList(text.split(":")[1].split("/")));
+                } else if (text.split("：").length >= 2) {
+                    actor.addAll(Arrays.asList(text.split("：")[1].split("/")));
+                }
+
+            } else if (text.startsWith("类型")) {
+                log.debug("类型:{}", text);
+                if (text.split(":").length > 2) {
+                    movie.setCategory(Arrays.asList(text.split(":")[1].split("/")));
+                } else if (text.split("：").length > 2) {
+                    movie.setCategory(Arrays.asList(text.split("：")[1].split("/")));
+                }
+            } else if (text.startsWith("制片国家/地区")) {
+                log.debug("制片国家/地区:{}", text);
+                movie.setOrigin(text.split(":")[1]);
+            } else if (text.startsWith("语言")) {
+                log.debug("语言:{}", text);
+                movie.setTranslatedName(Arrays.asList(text.split(":")[1].split("/")));
+            } else if (text.startsWith("上映日期")) {
+                log.debug("上映日期:{}", text);
+            } else if (text.startsWith("　　")) {
+                log.debug("简介:{}", text);
+                movie.setDescription(text);
+            }else if (text.startsWith("片长")) {
+                log.debug("片长", text);
+                text.split(":")[1].split("/")[0].replace(" ", "");
+                Pattern pat = Pattern.compile(REGEX_CHINESE);
+                Matcher mat = pat.matcher(text.split(":")[1].split("/")[0].replace(" ", ""));
+                movie.setDuration(Integer.parseInt(mat.replaceAll("")));
+            }
+        }
+        List<String> downloadUrl = new ArrayList<>();
+        Elements down = document.getElementsByTag("tbody");
+        Document downDoc =  Jsoup.parse(down.toString());
+        Elements downtr =downDoc.getElementsByClass("tab-pane1 fade in active");
+
+        for (Element ele : downtr) {
+            Elements es = ele.getAllElements().get(1).getElementsByTag("li");
+            Document esDoc =  Jsoup.parse(es.toString());
+            Elements a =esDoc.getElementsByTag("a");
+            String str1 =  a.attr("title");
+            String str2 = a.attr("href");
+            downloadUrl.add(str1 + str2);
+            log.debug("下载地址:{}", str1 + str2);
+        }
         movie.setDownloadUrl(downloadUrl);
         return movie;
     }

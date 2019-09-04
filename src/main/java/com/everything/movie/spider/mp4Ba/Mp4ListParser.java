@@ -24,6 +24,7 @@ import java.util.Set;
 public class Mp4ListParser {
 
 
+    private static Mp4ListParser mp4DetailParser;
     @Autowired
     public RedisUtil redis;
 
@@ -36,15 +37,10 @@ public class Mp4ListParser {
 
 
 
-    @Autowired
-    private MovieDetailParser movieDetailParser;
-
-    @Autowired
-    private IMovieRepository movieRepository;
 
     private Set<String> ids = new HashSet<>();
 
-    public void parse(String url) throws IOException {
+    public static void parse(String url) throws IOException {
         String userAgent = MovirConstants.userAgentList[new Random().nextInt(MovirConstants.userAgentList.length)];
         // Document document = Jsoup.connect(url).userAgent(userAgent).timeout(10000).get();
         log.info("抓取列表页面:{}", url);
@@ -64,45 +60,15 @@ public class Mp4ListParser {
         for (Element a : document.select(".weixin")) {
             String href = a.getElementsByTag("a").attr("href");
             if (href.matches("/hddy/hdmp[0-9]+-0-0.html")) {
-                String id = href.substring(3, href.lastIndexOf("."));
-                if (ids.contains(id)) {
-                    log.info("已经抓取过该电影，不再重复抓取");
-                } else {
-                    log.info("开始抓取电影id:{}", id);
-                    try {
-                        Thread.sleep(1000);
-                        Movie movie = movieDetailParser.parse(id);
-                        if (null != movie) {
-                            movieRepository.save(movie);
-                            ids.add(id);
-                            redis.sSet(START_PAGE, id);
-                        }
-
-                    } catch (IOException e) {
-
-
-                        log.error("抓取电影id:{}异常", id, e);
-                    } catch (InterruptedException e) {
-
-                    }
+                String id = href.substring(6, href.lastIndexOf("."));
+                log.info("电影的id是{}", id);
+                Mp4DetailParser.parse(id);
                 }
             }
         }
 
 
 
-        document.select("div.x a").forEach(a -> {
-            String text = a.text();
 
-            if (text.equals("下一页") ) {
-                try {
-                    parse(a.absUrl("href"));//recursion
-
-                } catch (IOException e) {
-                    log.error("抓取下一页异常:{}", e);
-                }
-            }
-        });
-    }
 
 }
