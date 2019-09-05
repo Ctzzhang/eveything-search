@@ -45,6 +45,7 @@ public class Mp4DetailParser {
 
         String userAgent = userAgentList[new Random().nextInt(userAgentList.length)];
         String url = MessageFormat.format(URL_PATTERN, id);
+        log.debug("movie url {}", url);
         Document document = Jsoup.connect(url).userAgent(userAgent).timeout(100000).get();
         Movie movie = new Movie();
         movie.setId(id);
@@ -97,13 +98,15 @@ public class Mp4DetailParser {
             text.replace(" ", "");
             if (text.startsWith("又名")) {
                 log.debug("又名:{}", text);
-                movie.setTranslatedName(Arrays.asList(text.split(":")[1].split("/")));
+                if (text.split(":").length >= 2) {
+                    movie.setTranslatedName(Arrays.asList(text.split(":")[1].split("/")));
+                }
             } else if (text.contains("导演")) {
                 log.debug("导演:{}", text);
 
                 if (text.split(":").length >= 2) {
                     movie.setDirector(text.split(":")[1]);
-                } else {
+                } else if (text.split(":").length >= 2) {
                     movie.setDirector(text.split("：")[1]);
                 }
 
@@ -138,9 +141,10 @@ public class Mp4DetailParser {
                 movie.setDescription(text);
             }else if (text.startsWith("片长")) {
                 log.debug("片长", text);
-                text.split(":")[1].split("/")[0].replace(" ", "");
+                text.split(":")[1].split("/")[0].replace(" ", "").replace("/)", "").replace("//)", "");
                 Pattern pat = Pattern.compile(REGEX_CHINESE);
-                Matcher mat = pat.matcher(text.split(":")[1].split("/")[0].replace(" ", ""));
+                Matcher mat = pat.matcher(text.split(":")[1].split("/")[0].replace(" ", "").replaceAll("[^\\d.]", ""));
+                Pattern.compile("[^0-9]").matcher(text.split(":")[1].split("/")[0].replace(" ", "")).replaceAll("").trim();
                 movie.setDuration(Integer.parseInt(mat.replaceAll("")));
             }
         }
@@ -152,7 +156,7 @@ public class Mp4DetailParser {
         for (Element ele : downtr) {
             Elements es = ele.getAllElements().get(1).getElementsByTag("li");
             Document esDoc =  Jsoup.parse(es.toString());
-            Elements a =esDoc.getElementsByTag("a");
+            Elements a = esDoc.getElementsByTag("a");
             String str1 =  a.attr("title");
             String str2 = a.attr("href");
             downloadUrl.add(str1 + str2);

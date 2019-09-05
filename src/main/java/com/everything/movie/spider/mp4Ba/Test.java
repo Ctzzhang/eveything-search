@@ -31,6 +31,6 @@ public class Test {
 
 
     public static void main(String[] args) throws IOException {
-        Mp4ListParser.parse(Mp4ListParser.START_PAGE);
+        Mp4ListParser.parse(Mp4ListParser.ALL_PAGE + "/dy/hd1_7.html");
     }
 }

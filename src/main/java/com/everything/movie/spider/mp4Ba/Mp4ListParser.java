@@ -11,10 +11,12 @@ import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
@@ -25,13 +27,16 @@ public class Mp4ListParser {
 
 
     private static Mp4ListParser mp4DetailParser;
+
+
     @Autowired
     public RedisUtil redis;
-
-    public static final String START_PAGE = "https://www.mp4pa.com/dy/hd1.html";
+    public static final  String ALL_PAGE = "https://www.mp4pa.com";
+    public static final String START_PAGE = "/dy/hd1.html";
     public static final String HTML = ".html";
 
 
+    public static String nowPageHtml = "";
 
     private static final int PAGE_MAX_NUM = 10;
 
@@ -53,7 +58,7 @@ public class Mp4ListParser {
             document =  conn.get();
         } catch (IOException e) {
             log.error("获取{}页面异常:{}", url, e);
-
+            parse(url);
         }
 
 
@@ -63,12 +68,38 @@ public class Mp4ListParser {
                 String id = href.substring(6, href.lastIndexOf("."));
                 log.info("电影的id是{}", id);
                 Mp4DetailParser.parse(id);
-                }
+
             }
         }
 
+        //获取下一页
+        Elements eles = document.getElementsByClass("pagination pagination-lg hidden-xs page");
+        Element s = eles.get(0);
+        String h = "";
+        for (Element seles : s.getAllElements()) {
+            h = seles.getElementsByTag("a").attr("href");
+            if (h.isEmpty() || h.equals(" ")) {
+                continue;
+            }
+            log.debug(h);
+            if (nowPageHtml.equals("") || h.compareTo(nowPageHtml) == 1 || h.length() > nowPageHtml.length())  {
+                 break;
+            }
+        }
+        if (nowPageHtml.equals(h) || h.equals("") ) {
+            log.info("抓取完毕{}", nowPageHtml);
+            return;
+        }
+        nowPageHtml = h;
 
+        try {
+            log.info("nextUrl{}", nowPageHtml);
+            parse(ALL_PAGE + nowPageHtml);
+        } catch (IOException e) {
+            e.printStackTrace();
+            log.error("nextUrl{} erro", nowPageHtml, e);
 
-
+        }
+    }
 
 }
