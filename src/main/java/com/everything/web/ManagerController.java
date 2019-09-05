@@ -49,7 +49,7 @@ public class ManagerController {
 
     @GetMapping("/mp4ba")
     public String mp4ba (@RequestParam(value = "p", required = false,
-            defaultValue = Mp4ListParser.START_PAGE) String page) {
+            defaultValue = Mp4ListParser.ALL_PAGE + Mp4ListParser.START_PAGE) String page) {
         try {
             if (lock.tryLock()) {
                 mp4ListParser.parse(page);

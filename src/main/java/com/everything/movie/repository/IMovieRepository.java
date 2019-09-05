@@ -7,7 +7,7 @@ import com.everything.movie.entity.QueryDTO;
 
 public interface IMovieRepository {
 
-    boolean save(Movie movie);
+    boolean save(Movie movie, String source);
 
     Page<Movie> query(String queryString, int pageNo, int size);
 

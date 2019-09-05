@@ -1,6 +1,7 @@
 package com.everything.movie.spider.mp4Ba;
 
 import com.everything.Redis.RedisUtil;
+import com.everything.movie.common.MovirConstants;
 import com.everything.movie.entity.Movie;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
@@ -11,21 +12,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.text.DateFormat;
 import java.text.MessageFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static com.everything.movie.spider.dytiantang.MovieListParser.userAgentList;
-import static java.util.stream.Collectors.toList;
 
 @Component
 @Slf4j
@@ -37,13 +30,13 @@ public class Mp4DetailParser {
     public static final String URL_PATTERN = "https://www.mp4pa.com/hddy/{0}.html";
     private static String REGEX_CHINESE = "[\u4e00-\u9fa5]";// 中文正则
 
-    public static Movie parse(String id) throws IOException {
+    public Movie parse(String id) throws IOException {
         /*if (redis.sHasKey(MovieListParser.START_PAGE, id)) {
             log.info("redis has id {}", id);
             return null;
         }*/
 
-        String userAgent = userAgentList[new Random().nextInt(userAgentList.length)];
+        String userAgent = MovirConstants.userAgentList[new Random().nextInt(MovirConstants.userAgentList.length)];
         String url = MessageFormat.format(URL_PATTERN, id);
         log.debug("movie url {}", url);
         Document document = Jsoup.connect(url).userAgent(userAgent).timeout(100000).get();
@@ -133,7 +126,11 @@ public class Mp4DetailParser {
                 movie.setOrigin(text.split(":")[1]);
             } else if (text.startsWith("语言")) {
                 log.debug("语言:{}", text);
-                movie.setTranslatedName(Arrays.asList(text.split(":")[1].split("/")));
+                if (text.split(":").length >= 2) {
+                    movie.setTranslatedName(Arrays.asList(text.split(":")[1].split("/")));
+                } else if (text.split("：").length >= 2) {
+                    movie.setTranslatedName(Arrays.asList(text.split("：")[1].split("/")));
+                }
             } else if (text.startsWith("上映日期")) {
                 log.debug("上映日期:{}", text);
             } else if (text.startsWith("　　")) {

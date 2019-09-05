@@ -37,13 +37,20 @@ public class MovieESRepository implements IMovieRepository {
     public static final String INDEX = "movie";
 
     public static final String TYPE = "dy2018";
+    public static final String TYPE2 = "mp4pa";
 
     @Autowired
     private JestClient client;
 
     @Override
-    public boolean save(Movie movie) {
-        Index index = new Index.Builder(movie).index(INDEX).type(TYPE).build();
+    public boolean save(Movie movie, String source) {
+        Index index = null;
+        if (source.equals(TYPE)) {
+            index = new Index.Builder(movie).index(INDEX).type(TYPE).build();
+        } else  if (source.equals(TYPE2)) {
+           index = new Index.Builder(movie).index(INDEX).type(TYPE2).build();
+        }
+
         try {
             JestResult jestResult = client.execute(index);
             log.info("save返回结果{}", jestResult.getJsonString());
@@ -68,9 +75,11 @@ public class MovieESRepository implements IMovieRepository {
                 .field("description");
         searchSourceBuilder.query(queryStringQueryBuilder).from(from(pageNo, size)).size(size);
         log.debug("搜索DSL:{}", searchSourceBuilder.toString());
+
+
         Search search = new Search.Builder(searchSourceBuilder.toString())
                 .addIndex(INDEX)
-                .addType(TYPE)
+                .addType(TYPE).addType(TYPE2)
                 .build();
         try {
             SearchResult result = client.execute(search);
@@ -89,6 +98,7 @@ public class MovieESRepository implements IMovieRepository {
             int took = result.getJsonObject().get("took").getAsInt();
 
             Page<Movie> page = Page.<Movie>builder().list(movies).pageNo(pageNo).size(size).total(result.getTotal()).took(took).build();
+
             return page;
         } catch (IOException e) {
             log.error("search异常", e);
@@ -121,8 +131,8 @@ public class MovieESRepository implements IMovieRepository {
 
             int took = result.getJsonObject().get("took").getAsInt();
 
-            Long a = getTotal(result);
-            //result.getTotal();
+            //Long a = getTotal(result);
+            Long a = result.getTotal();
 
             Page<Movie> page = Page.<Movie>builder().list(movies).pageNo(pageNo).size(size).total(a).took(took).build();
             return page;

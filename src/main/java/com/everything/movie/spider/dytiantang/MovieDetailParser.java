@@ -1,6 +1,7 @@
 package com.everything.movie.spider.dytiantang;
 
 import com.everything.Redis.RedisUtil;
+import com.everything.movie.common.MovirConstants;
 import com.everything.movie.entity.Movie;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
@@ -22,8 +23,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-
-import static com.everything.movie.spider.dytiantang.MovieListParser.userAgentList;
 import static java.util.stream.Collectors.toList;
 
 @Component
@@ -41,7 +40,7 @@ public class MovieDetailParser {
             return null;
         }
 
-        String userAgent = userAgentList[new Random().nextInt(userAgentList.length)];
+        String userAgent = MovirConstants.userAgentList[new Random().nextInt(MovirConstants.userAgentList.length)];
         String url = MessageFormat.format(URL_PATTERN, id);
         Document document = Jsoup.connect(url).userAgent(userAgent).timeout(100000).get();
         Movie movie = new Movie();
