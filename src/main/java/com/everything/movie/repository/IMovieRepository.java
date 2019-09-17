@@ -14,4 +14,7 @@ public interface IMovieRepository {
     Page<Movie> query(QueryDTO queryDTO, int pageNo, int size);
 
     Movie get(String id);
+
+    boolean deleteAll();
+
 }

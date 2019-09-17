@@ -1,6 +1,7 @@
 package com.everything.web;
 
 
+import com.everything.Redis.RedisUtil;
 import com.everything.movie.entity.Movie;
 import com.everything.movie.entity.Page;
 import com.everything.movie.entity.QueryDTO;
@@ -25,6 +26,9 @@ public class SearchController {
 
     @Autowired
     private IMovieRepository movieRepository;
+
+    @Autowired
+    public RedisUtil redis;
 
     @GetMapping("/")
     public String index(Model model) {
@@ -59,5 +63,11 @@ public class SearchController {
         Movie movie = movieRepository.get(id);
         model.addAttribute("movie", movie);
         return "detail";
+    }
+
+    @GetMapping("/deleteAll")
+    public void deleteAll (Model model) {
+        boolean sucess = movieRepository.deleteAll();
+        log.info("deleteAll sucess{}", sucess);
     }
 }

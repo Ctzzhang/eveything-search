@@ -3,6 +3,7 @@ package com.everything.Redis;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.util.CollectionUtils;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -520,6 +521,15 @@ public class RedisUtil {
         } catch (Exception e) {
             e.printStackTrace();
             return 0;
+        }
+    }
+
+    public static final String prefix = "*";
+    public void deleteAll() {
+        Set<String> keys = redisTemplate.keys(prefix);
+        Iterator<String> it1 = keys.iterator();
+        while (it1.hasNext()) {
+            redisTemplate.delete(it1.next());
         }
     }
 }

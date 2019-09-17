@@ -1,6 +1,7 @@
 package com.everything.movie.repository.impl;
 
 
+import com.everything.Redis.RedisUtil;
 import com.everything.movie.entity.Movie;
 import com.everything.movie.entity.Page;
 import com.everything.movie.entity.QueryDTO;
@@ -9,10 +10,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.searchbox.client.JestClient;
 import io.searchbox.client.JestResult;
-import io.searchbox.core.Get;
-import io.searchbox.core.Index;
-import io.searchbox.core.Search;
-import io.searchbox.core.SearchResult;
+import io.searchbox.core.*;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryStringQueryBuilder;
@@ -28,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.IntStream.builder;
 
 @Repository
 @Slf4j
@@ -37,20 +34,21 @@ public class MovieESRepository implements IMovieRepository {
     public static final String INDEX = "movie";
 
     public static final String TYPE = "dy2018";
-    public static final String TYPE2 = "mp4pa";
+    /*public static final String TYPE2 = "mp4pa";*/
 
     @Autowired
     private JestClient client;
-
+    @Autowired
+    public RedisUtil redis;
     @Override
     public boolean save(Movie movie, String source) {
         Index index = null;
-        if (source.equals(TYPE)) {
+        /*if (source.equals(TYPE)) {*/
             index = new Index.Builder(movie).index(INDEX).type(TYPE).build();
-        } else  if (source.equals(TYPE2)) {
-           index = new Index.Builder(movie).index(INDEX).type(TYPE2).build();
+        /*} else  if (source.equals(TYPE2)) {
+           index = new Index.Builder(movie).index(INDEX).build();
         }
-
+*/
         try {
             JestResult jestResult = client.execute(index);
             log.info("save返回结果{}", jestResult.getJsonString());
@@ -79,7 +77,7 @@ public class MovieESRepository implements IMovieRepository {
 
         Search search = new Search.Builder(searchSourceBuilder.toString())
                 .addIndex(INDEX)
-                .addType(TYPE).addType(TYPE2)
+                .addType(TYPE)
                 .build();
         try {
             SearchResult result = client.execute(search);
@@ -166,6 +164,25 @@ public class MovieESRepository implements IMovieRepository {
             log.error("get异常", e);
             return null;
         }
+    }
+
+    @Override
+    public boolean deleteAll() {
+        Delete.Builder builder = new Delete.Builder(INDEX);
+        builder.refresh(true);
+        Delete delete = builder.index(INDEX).build();
+        JestResult result = null;
+        redis.deleteAll();
+        try {
+            result = client.execute(delete);
+        } catch (IOException e) {
+            if (result != null && result.isSucceeded()) {
+                throw new RuntimeException(result.getErrorMessage()+"删除索引失败!");
+            }
+            e.printStackTrace();
+            return false;
+        }
+        return true;
     }
 
     private int from(int pageNo, int size) {
